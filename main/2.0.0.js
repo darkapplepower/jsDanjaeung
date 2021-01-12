@@ -38,10 +38,10 @@ function 단자응(mode,msg,send){
                     case "일치":
                         return params.msg==i.msg;
                         break;
-                    case "포함":
+                    case "시작":
                         return params.msg.includes(i.msg);
                         break;
-                    case "시작":
+                    case "포함":
                         return params.msg.startsWith(i.msg);
                         break;
                 }
@@ -682,12 +682,7 @@ function onCreate(savedInstanceState, activity) {
     var s1=new android.widget.Spinner(activity);
     s1.setAdapter(new android.widget.ArrayAdapter(activity,android.R.layout.simple_list_item_1,["일치","시작","포함"]));
     layout.addView(s1);
-    s1.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
-        onItemSelected:function(a,b,c,d){
-            b.setTextColor(textColor[b.getText()]);
-            t1.setTextColor(textColor[b.getText()]);
-        }
-    });
+    
     var t1=new android.widget.TextView(activity);
     t1.setText("이렇게 말하면...");
     t1.setGravity(android.view.Gravity.CENTER);
@@ -784,8 +779,8 @@ function getLC(){
 }
 const textColor={
     "일치":android.graphics.Color.parseColor("#ffffff"),
-    "포함":android.graphics.Color.parseColor("#ffff00"),
-    "시작":android.graphics.Color.parseColor("#0000ff")
+    "시작":android.graphics.Color.parseColor("#ffff00"),
+    "포함":android.graphics.Color.parseColor("#0000ff")
 };
 const t6=[null," ░ "," █ "," ░ "," █ "," ░ "];
 const t1=["███","░░█","███","███","█░█","███","███","███","███","███"];
