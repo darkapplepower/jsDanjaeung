@@ -1,2 +1,2 @@
 # jsDanjaeung
-js danjaeung for messengerbotR with activity
+js danjaeung for messengerbotR
