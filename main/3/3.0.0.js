@@ -1,12 +1,11 @@
-/*
- * Block로 생성한 것들을 run으로 돌릴 수 있음,
- * 아직 완벽하게 구현하진 않았음
- * 태그가 날씨, 다음채팅 2개 뿐임
- */
-const scriptName = "단자응 3.0.0";
+ const scriptName = "단자응 3.0.0";
 
 function response(arg) {
-    arg.replier.reply(eval(arg.msg));
+    if(arg.msg.startsWith("단자응 ")){
+        run(arg.msg.replace("단자응 ",""),arg);
+    }else{
+        arg.replier.reply(eval(arg.msg));
+    }
 }
 
 function Block(msg, reply, mode, send) {
@@ -29,7 +28,13 @@ function Block(msg, reply, mode, send) {
     //false: 실행은 하지만, 채팅방에 보내진 않음
 }
 (function () {
+    const p = {};
     Block.run = function (list, arg) {
+        if (!Object.prototype.hasOwnProperty.call(p, arg.room)) {
+            p[arg.room] = "";
+        }
+        arg.p = p[arg.room];
+        p[arg.room] = arg.msg;
         //list의 모든 요소를 실행
         list.forEach(x => {
             if (check(x, arg)) {
@@ -129,70 +134,168 @@ const run = (function () {
             }
         };
     })();
-    function runBlock(block, params) {
-        var code = split(block.slice(2, -2));
-        //앞과 뒤의 태그 시작점, 종료점을 떼어낸다. 그 후에 태그 분석
+    function codeToStr(str,params){
+        var result="";
+        str.forEach(x=>{
+            if(x.type===1){
+                result+=runBlock(str,params).map(x=>x.value).join("");
+            }else{
+                result+=x.value;
+            }
+        });
+        return result;
+    }
+    function codeToArray(str,params){
+        var result=[];
+        str.forEach(x=>{
+            if(x.type===1){
+                runBlock(x.value,params).map(x=>result.push(x));
+            }else{
+                result.push(x);
+            }
+        });
+        return result;
+    }
+    function runBlock(str,params){
+        var code = split(str.slice(2, -2));
+        //앞뒤 [[]] 제거,블럭 분석
         const result = [];
         //|로 구분한 것 담을 배열
         var len = 0;
         //|로 구분하기 위해 필요한 변수
         for (let i of code) {
             if (result[len] === undefined) {
-                result[len] = "";
+                result[len] = [];
             }
-            if (i.type === 1) {
-                let res = runBlock(i.value, params);
-                if (result[len] === "") {
-                    result[len] = res;
-                } else {
-                    result[len] += res;
-                }
-            } else {
+            if (i.type === 0) {
                 let barrier = i.value.split("|");
                 barrier.forEach((x, xx) => {
                     if (result[len + xx] === undefined) {
-                        result[len + xx] = x;
+                        result[len + xx] = [{
+                            type:0,
+                            value:x
+                        }];
                     } else {
-                        result[len + xx] += x;
+                        result[len + xx].push({
+                            type:0,
+                            value:x
+                        });
                     }
                 });
                 len += barrier.length - 1;
+            }else{
+                result[len].push(i);
             }
         }
-        if (functions.hasOwnProperty(result[0])) {
-            return functions[result.shift()](result, params);
+        if (functions.hasOwnProperty(result[0].map(x=>x.value).join(""))) {
+            let ret=functions[result.shift().map(x=>x.value).join("")](result, params);
+            if(ret.constructor===Array){
+                return ret;
+            }else{
+                return [ret];
+            }
         } else {
-            return block;
+            return [{
+                type: 0,
+                value: str
+            }];
         }
     }
+    /*
+     * 함수를 만들 때 주의사항 *
+     * * [[만약]], [[다음채팅]] 같은 태그의 존재로 인하여
+     * * 태그를 미리 처리하고 넘기지 않으므로
+     * * 태그를 처리해야 할 경우는
+     * * 문자열을 원할 시 codeToStr 함수를 호출하여야 한다.
+     * * (요소가 생생하게(?) 살아있는 것(아래에 있는 리턴값들이 배열로 옴)을 원한다면 codeToArray)
+     * * codeToStr(arg[0],params);
+     * * 같은 형식으로!
+     * * * * * * * *
+     * 함수의 리턴값에 대하여
+     * * {
+     * *     type:타입,
+     * *     value:"값",
+     * *     //type가 2일 시
+     * *     second:(초)
+     * * }
+     * * * 타입 0: 일반 채팅
+     * * * 타입 1: 블록(어차피 블록 리턴해봤자 0이랑 똑같이 처리되지만!)
+     * * * 타입 2: 다음채팅
+     */
+     function type0(value){
+         return {
+             type: 0,
+             value: String(value)
+         };
+     }
     const functions = {
-        날씨: function () {
-            return Utils.parse("https://m.search.daum.net/search?w=tot&nil_mtopsearch=btn&DA=YZR&q=%EC%A0%84%EA%B5%AD%EB%82%A0%EC%94%A8").select("a[class= link_city now_info]").toArray().map(x => [x.select("span.txt_name"), x.select("span.txt_temp"), x.select("span[class^=ico_ws ico_w0]")].map(xx => xx.text()).join(" ")).join("\n");
+        보낸사람: function (arg, params) {
+            return type0(params.sender);
+        },
+        내용: function (arg, params) {
+            return type0(params.msg);
+        },
+        이전내용: function (arg, params) {
+            return type0(params.p);
+        },
+        방: function (arg, params) {
+            return type0(params.room);
+        },
+        전체보기: function () {
+            return type0("\u200b".repeat(1000));
+        },
+        날짜: function () {
+            return type0(new Date().toLocaleDateString());
+        },
+        시간: function () {
+            var t = new Date();
+            return type0(t.getHours() + "시 " + t.getMinutes() + "분 " + t.getSeconds() + "초");
+        },
+        월: function () {
+            return type0(new Date().getMonth() + 1);
+        },
+        일: function () {
+            return type0(new Date().getDate());
+        },
+        시: function () {
+            return type0(new Date().getHours());
+        },
+        분: function () {
+            return type0(new Date().getMinutes());
+        },
+        초: function () {
+            return type0(new Date().getSeconds());
+        },
+        랜덤: function (arg, params) {
+            return arg.length === 0 ? [] : codeToArray(arg[Math.random() * arg.length | 0]);
         },
         다음채팅: function (arg, params) {
-            return ["다음채팅", isNaN(arg[0]) ? 0 : Number(arg[0])];
+            return {
+                type: 2,
+                value: "",
+                time: isNaN(codeToStr(arg[0])) ? 0 : Number(codeToStr(arg[0]))
+            };
         }
     };
-    return function (str, params) {
-        str = split(str);
-        const result = [""];
-        const delay = [0];
-        str.forEach(x => {
-            if (x.type === 1) {
-                let i = runBlock(x.value, params);
-                if (i[0] === "다음채팅") {
-                    result[result.length] = "";
-                    delay[delay.length] = i[1];
-                } else {
-                    result[result.length - 1] += i;
-                }
-            } else {
-                result[result.length - 1] += x.value;
+    return function(code,params){
+        code=split(code);
+        const result=[];
+        code.forEach(x=>{
+            if(x.type===1){
+                runBlock(x.value).forEach(x=>result.push(x));
+            }else{
+                result.push(x);
             }
         });
-        result.forEach((x, xx) => {
-            java.lang.Thread.sleep(delay[xx] * 1000);
-            params.replier.reply(x);
+        var str="";
+        result.forEach(x=>{
+            str+=x.value;
+            if(x.type===2){
+                params.replier.reply(str);
+                str="";
+                java.lang.Thread.sleep(x.time*1000);
+            }
         });
-    };
+        params.replier.reply(str);
+    }
 })();
