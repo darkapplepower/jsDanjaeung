@@ -342,7 +342,7 @@ const run = (function () {
             return type0(arg[0].replace(new RegExp(arg[1], "g"), ""));
         },
         날씨: function () {
-            return type0(Utils.parse("https://m.search.daum.net/search?w=tot&nil_mtopsearch=btn&DA=YZR&q=%EC%A0%84%EA%B5%AD%EB%82%A0%EC%94%A8").select("a[class= link_city now_info]").toArray().map(x => [x.select("span.txt_name"), x.select("span.txt_temp") + "C", x.select("span[class^=ico_ws ico_w0]")].map(xx => xx.text()).join(" ")).join("\n"));
+            return type0(Utils.parse("https://m.search.daum.net/search?w=tot&nil_mtopsearch=btn&DA=YZR&q=%EC%A0%84%EA%B5%AD%EB%82%A0%EC%94%A8").select("a[class= link_city now_info]").toArray().map(x => [x.select("span.txt_name"), x.select("span.txt_temp"), x.select("span[class^=ico_ws ico_w0]")].map(xx => xx.text()).join(" ")).join("\n"));
         },
         시계: function () {
             return type0(new Date().getClock());
@@ -617,9 +617,9 @@ const run = (function () {
                 case 0:
                     return type0("");
                     break;
-                case 1: {
-                    let data = FileStream.read(savePath + "/파일/" + codeToStr(arg[0], params) + ".txt");
-                    return type0(data === null ? "(저장된 값 없음)" : data);
+                case 1:{
+                    let data=FileStream.read(savePath + "/파일/" + codeToStr(arg[0], params) + ".txt");
+                    return type0(data===null?"(저장된 값 없음)":data);
                     break;
                 }
                 case 2:
